@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#234c3d">
+  <meta name="description" content="13 categorieën. Eén letter. 120 seconden. Speel Letterpret gratis in het Nederlands, met telkens een nieuwe ronde.">
+  <title>Letterpret — klaar, letter, af!</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23234c3d'/%3E%3Ctext x='32' y='47' text-anchor='middle' font-family='Georgia' font-size='48' fill='%23f8df80'%3EL%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <script defer src="core.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Letterpret startpagina"><span class="brand-icon">L</span>letterpret<span class="brand-dot">.</span></a>
+    <button class="text-button" id="rulesButton">Hoe speel je?</button>
+  </header>
+  <main>
+    <section class="intro" id="intro">
+      <div class="eyebrow">HET WOORDSPEL VOOR SNELLE DENKERS</div>
+      <h1>Klaar. Letter. <em>Af!</em></h1>
+      <p class="lead">Eén letter, dertien categorieën.<br>Hoe ver kom jij in twee minuten?</p>
+      <div class="letter-stack" aria-hidden="true"><span class="tile tile-back">B</span><span class="tile tile-front">A<span>1 LETTER</span></span><span class="tile tile-side">Z</span></div>
+      <div class="start-panel">
+        <div class="facts"><span><strong>13</strong> categorieën</span><span><strong>120</strong> seconden</span><span><strong>∞</strong> rondes</span></div>
+        <button class="primary start" id="startButton">Start een ronde <span aria-hidden="true">▶</span></button>
+        <p class="small" id="startHint">De letter en categorieën verschijnen zodra je start.</p>
+      </div>
+      <p class="intro-foot">Speel alleen of samen aan tafel. Geen account nodig.</p>
+    </section>
+
+    <section id="game" hidden aria-label="Spelronde">
+      <div class="game-heading"><div><div class="eyebrow" id="roundLabel">JOUW RONDE</div><h1 id="gameTitle">Laat die woorden komen.</h1></div><span class="round-code" id="roundCode"></span></div>
+      <div class="play-layout">
+        <aside class="dashboard">
+          <div class="dashboard-top"><div class="letter-label">ALLES BEGINT MET</div><div class="active-letter" id="letter">A</div></div>
+          <div class="clock-block"><div class="timer" id="timer" role="timer" aria-label="Resterende tijd">02:00</div><div class="timer-caption" id="timerCaption">Je tijd loopt…</div><div class="time-track"><div id="timeFill"></div></div></div>
+          <div class="progress-line"><span>Ingevuld</span><strong id="filled">0 / 13</strong></div>
+          <button class="secondary" id="finishButton">Klaar met invullen</button>
+          <p class="keyboard-tip">Tip: met Tab ga je naar het volgende vakje.</p>
+        </aside>
+        <div class="answer-sheet">
+          <div class="sheet-heading"><span>CATEGORIE</span><span id="columnLabel">JOUW ANTWOORD</span></div>
+          <form id="answers" autocomplete="off"></form>
+        </div>
+      </div>
+      <section id="results" class="results" hidden aria-label="Resultaat">
+        <div class="score-block"><span class="score" id="score">0<span>/ 13</span></span><div><h2>Even samen nakijken.</h2><p>De beginletter en dubbele antwoorden zijn gecontroleerd. Jij bepaalt of elk woord bij de categorie past.</p></div></div>
+        <p class="small">Vink ongeldige antwoorden uit. Samen gespeeld? Een antwoord dat iemand anders ook heeft, telt niet mee.</p>
+        <div class="result-actions"><button class="primary" id="nextButton">Nog een ronde</button><button class="secondary" id="shareButton">Deel deze uitdaging</button></div>
+        <p class="small">Een gedeelde uitdaging heeft dezelfde letter en categorieën. Iedereen start zijn eigen timer; er is geen live spelkamer.</p>
+        <div id="shareFallback" hidden><label for="shareUrl">Kopieer deze link:</label><input id="shareUrl" readonly></div>
+      </section>
+    </section>
+    <p id="announcement" role="status" aria-live="polite" class="announcement"></p>
+  </main>
+  <footer><span>letterpret. <span class="footer-tag">Een kleine letter. Grote hersenkrakers.</span></span><span id="bankCount"></span></footer>
+  <dialog id="rulesDialog" aria-labelledby="rulesTitle">
+    <div class="dialog-heading"><h2 id="rulesTitle">Zo speel je Letterpret</h2><button class="close-button" id="closeRules" aria-label="Spelregels sluiten">×</button></div>
+    <ol><li>Start een ronde. Je krijgt <strong>één letter en 13 categorieën</strong>.</li><li>Schrijf per categorie één antwoord dat met die letter begint. Je hebt <strong>120 seconden</strong>.</li><li>De timer stopt niet als je van tabblad wisselt. Bij nul gaan de invulvakjes op slot.</li><li>Elk geldig antwoord levert <strong>1 punt</strong> op. Hetzelfde woord mag je in een ronde maar één keer gebruiken.</li><li>Kijk zelf na of het antwoord bij de categorie past. Het spel gebruikt geen woordenboek of AI-jury.</li></ol>
+    <h3>Samen aan tafel</h3><p>Speel met één scherm en schrijf op papier, of deel na een ronde de uitdaging. Met een gedeelde link krijgt iedereen dezelfde ronde. Spreek af wanneer jullie starten. Identieke antwoorden van verschillende spelers leveren geen punt op.</p>
+    <p class="small">Nieuwe rondes combineren willekeurig categorieën en letters. Je kunt onbeperkt doorspelen; een combinatie kan ooit terugkomen. Q, X en Y doen niet mee.</p>
+  </dialog>
+  <noscript><p class="noscript">Schakel JavaScript in om Letterpret te spelen.</p></noscript>
+</body>
+</html>
