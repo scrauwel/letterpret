@@ -12,6 +12,7 @@ Open `dist/index.html` in je browser, of open de GitHub Pages-link van deze repo
 - Antwoorden worden alleen tijdens deze browsersessie op dit toestel bewaard (sessionStorage). Geen server, tracking of externe lettertypen.
 - Automatische controle van beginletter en herhaalde woorden. De speler beoordeelt zelf of een antwoord inhoudelijk past. De getoonde score is dus een zelf beoordeelde score.
 - Deel na een ronde een link naar dezelfde uitdaging. Elke speler start zelf; geen live multiplayer of automatische vergelijking tussen spelers.
+- Twee speelstanden: **Zelf invullen** op je toestel, en **Op scherm & papier** met alle categorieën groot in beeld, zonder invulvakjes. Ideaal voor televisie of projector. Iedere speler nummert zijn blad van 1 tot 13. Een knop opent volledig scherm (Esc sluit het af). Dezelfde timer van 120 seconden geldt; na afloop blijven de categorieën zichtbaar.
 - Hoofdletters en accenten worden bij de eenvoudige controle gelijk behandeld. Het eerste voorkomen van een dubbel woord kan een punt krijgen; latere herhalingen niet. Lidwoorden worden niet overgeslagen.
 
 ## GitHub Pages

@@ -10,9 +10,10 @@
   function countFilled(){$('filled').textContent=`${state.answers.filter(x=>x.trim()).length} / 13`;}
   function showGame(){ $('intro').hidden=true;$('game').hidden=false; }
   function render(){
-    const r=round();showGame();$('letter').textContent=r.letter;$('roundCode').textContent=`RONDE ${r.code}`;
+    const r=round();showGame();const paper=state.mode==='paper';document.body.classList.toggle('paper',paper);$('letter').textContent=r.letter;$('roundCode').textContent=`RONDE ${r.code}`;
+    $('fullscreenButton').hidden=!paper;$('finishButton').textContent=paper?'Ronde afronden':'Klaar met invullen';
     $('answers').replaceChildren();$('results').hidden=state.phase!=='review';$('finishButton').hidden=state.phase!=='playing';
-    $('gameTitle').textContent=state.phase==='review'?'De woorden liggen op tafel.':'Laat die woorden komen.';
+    $('gameTitle').textContent=paper?(state.phase==='review'?'Pennen neer!':'Schrijf mee op papier.'):(state.phase==='review'?'De woorden liggen op tafel.':'Laat die woorden komen.');
     $('columnLabel').textContent=state.phase==='review'?'ANTWOORD & PUNT':'JOUW ANTWOORD';
     r.categories.forEach((category,i)=>{
       const row=document.createElement('div');row.className='answer-row';
@@ -27,11 +28,12 @@
     });
     countFilled();if(state.phase==='review')renderReview();tick();
   }
-  function start(code){
+  function start(code,mode){
     clearInterval(interval);
-    state={code:code||core.randomCode(),phase:'playing',answers:Array(13).fill(''),accepted:Array(13).fill(false),deadline:Date.now()+120000,remaining:120};
+    $('shareFallback').hidden=true;
+    state={code:code||core.randomCode(),mode:mode||state?.mode||document.querySelector('input[name=mode]:checked').value,phase:'playing',answers:Array(13).fill(''),accepted:Array(13).fill(false),deadline:Date.now()+120000,remaining:120};
     challenge=null;save();announce('De ronde is gestart. Je hebt 120 seconden.');render();
-    interval=setInterval(tick,200);window.scrollTo({top:0,behavior:'instant'});$('answer-0').focus({preventScroll:true});
+    interval=setInterval(tick,200);window.scrollTo({top:0,behavior:'instant'});if(state.mode!=='paper')$('answer-0').focus({preventScroll:true});
   }
   function tick(){
     if(!state)return;
@@ -46,7 +48,7 @@
     if(!state||state.phase!=='playing')return;
     state.remaining=expired?0:Math.max(0,Math.ceil((state.deadline-Date.now())/1000));state.phase='review';clearInterval(interval);
     state.accepted=core.inspect(state.answers,round().letter).map(x=>x.eligible);save();render();
-    announce(expired?'Tijd om! Je antwoorden zijn vastgezet. Kijk ze hieronder na.':'Ronde afgerond. Kijk je antwoorden na.');
+    announce(state.mode==='paper'?'Pennen neer! Vergelijk jullie antwoorden op papier.':expired?'Tijd om! Je antwoorden zijn vastgezet. Kijk ze hieronder na.':'Ronde afgerond. Kijk je antwoorden na.');
     $('nextButton').focus({preventScroll:true});
   }
   function renderReview(){
@@ -67,6 +69,9 @@
   $('startButton').addEventListener('click',()=>start(challenge));
   $('finishButton').addEventListener('click',()=>finish());
   $('nextButton').addEventListener('click',()=>{history.replaceState(null,'',location.pathname+location.search);start();});
+  $('homeButton').addEventListener('click',()=>{clearInterval(interval);state=null;save();document.body.classList.remove('paper');$('game').hidden=true;$('intro').hidden=false;$('shareFallback').hidden=true;$('startHint').textContent='De letter en categorieën verschijnen zodra je start.';announce('');history.replaceState(null,'',location.pathname+location.search);window.scrollTo({top:0,behavior:'instant'});$('startButton').focus({preventScroll:true});});
+  $('fullscreenButton').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{announce('Volledig scherm is niet beschikbaar in deze browser. Je kunt ook de schermvullende stand van je browser gebruiken.');}});
+  document.addEventListener('fullscreenchange',()=>{$('fullscreenButton').textContent=document.fullscreenElement?'Verlaat volledig scherm':'Volledig scherm';});
   $('rulesButton').addEventListener('click',()=>$('rulesDialog').showModal());
   $('closeRules').addEventListener('click',()=>$('rulesDialog').close());
   $('shareButton').addEventListener('click',async()=>{
