@@ -25,23 +25,25 @@
       <div class="letter-stack" aria-hidden="true"><span class="tile tile-back">B</span><span class="tile tile-front">A<span>1 LETTER</span></span><span class="tile tile-side">Z</span></div>
       <div class="start-panel">
         <fieldset class="mode-picker"><legend>Hoe spelen jullie?</legend><label><input type="radio" name="mode" value="digital" checked><span>Zelf invullen</span></label><label><input type="radio" name="mode" value="paper"><span>Op scherm & papier</span></label></fieldset>
+        <fieldset class="mode-picker"><legend>Niveau</legend><label><input type="radio" name="level" value="kids"><span>6–12 jaar · makkelijk</span></label><label><input type="radio" name="level" value="older" checked><span>13 jaar en ouder</span></label></fieldset>
+        <p id="levelHint" class="small">Meer uitdaging, met optionele internetcategorieën.</p>
         <label class="duration-label" for="duration">Speeltijd <span>120–480 seconden</span></label>
         <div class="duration-control"><input id="durationRange" type="range" min="120" max="480" step="1" value="120" aria-label="Speeltijd in seconden"><input id="duration" type="number" min="120" max="480" step="1" value="120" required aria-label="Speeltijd in seconden invullen"><span>sec.</span></div>
         <label class="online-choice"><input id="onlineEnabled" type="checkbox" checked> Verrijk met categorieën van internet</label>
-        <p class="small">Nieuwe onderwerpen uit Nederlandstalige Wikipedia. Zonder verbinding gebruiken we bewaarde categorieën en de vaste voorraad.</p>
+        <p class="small" id="onlineInfo">Nieuwe onderwerpen uit Nederlandstalige Wikipedia. Zonder verbinding gebruiken we bewaarde categorieën en de vaste voorraad.</p>
         <button class="primary start" id="startButton">Ronde klaarzetten</button>
-        <p class="small" id="startHint">De klok start pas bij ‘Start de klok’ op het volgende scherm.</p>
+        <p class="small" id="startHint">Je ziet eerst de letter. De categorieën verschijnen pas bij Play.</p>
       </div>
       <p class="intro-foot">Speel alleen of samen aan tafel. Geen account nodig.</p>
     </section>
 
     <section id="ready" class="ready-screen" hidden aria-labelledby="readyTitle">
-      <div class="eyebrow">IEDEREEN KLAAR?</div><h1 id="readyTitle">Nog even geheim.</h1>
-      <div class="secret-letter" aria-hidden="true">?</div>
-      <p id="readyHint">De letter en alle 13 categorieën blijven verborgen<br>tot je op <strong>Start de klok</strong> klikt.</p>
+      <div class="eyebrow" id="readyLevel">IEDEREEN KLAAR?</div><h1 id="readyTitle">Dit is jullie letter.</h1>
+      <div class="secret-letter" id="readyLetter" aria-label="Letter van deze ronde">?</div>
+      <p id="readyHint">De categorieën blijven verborgen tot je op <strong>Play</strong> klikt.</p>
       <div class="ready-controls"><label for="readyDuration">Speeltijd in seconden (120–480)</label><input id="readyDuration" type="number" min="120" max="480" step="1" value="120" required><span id="readyTime">02:00</span></div>
       <p id="sourceStatus" class="small" role="status">Ronde wordt klaargezet…</p>
-      <button id="beginButton" class="primary" disabled>Start de klok</button>
+      <button id="beginButton" class="primary" disabled>Play · start de klok</button>
       <button id="readyFullscreen" class="secondary">Volledig scherm</button>
       <div><button id="readyBack" class="text-button">Terug naar instellingen</button></div>
     </section>
@@ -54,6 +56,7 @@
           <div class="clock-block"><div class="timer" id="timer" role="timer" aria-label="Resterende tijd">02:00</div><div class="timer-caption" id="timerCaption">Je tijd loopt…</div><div class="time-track"><div id="timeFill"></div></div></div>
           <div class="progress-line"><span>Ingevuld</span><strong id="filled">0 / 13</strong></div>
           <button class="secondary" id="finishButton">Klaar met invullen</button>
+          <button class="secondary" id="pauseButton">Pauze</button>
           <button class="secondary" id="fullscreenButton" hidden>Volledig scherm</button>
           <p class="keyboard-tip">Tip: met Tab ga je naar het volgende vakje.</p>
         </aside>
@@ -78,8 +81,8 @@
   <footer><span>letterpret. <span class="footer-tag">Een kleine letter. Grote hersenkrakers.</span></span><span id="bankCount"></span></footer>
   <dialog id="rulesDialog" aria-labelledby="rulesTitle">
     <div class="dialog-heading"><h2 id="rulesTitle">Zo speel je Letterpret</h2><button class="close-button" id="closeRules" aria-label="Spelregels sluiten">×</button></div>
-    <ol><li>Kies <strong>120 tot 480 seconden</strong> en zet een ronde klaar. Alles blijft verborgen.</li><li>Klik op <strong>Start de klok</strong>: pas dan verschijnen de letter en de 13 categorieën, en begint de timer.</li><li>Schrijf per categorie één antwoord dat met die letter begint. De timer loopt door als je van tabblad wisselt of herlaadt. Na herladen moet je zelf op ‘Hervat ronde’ klikken om de categorieën weer te zien; dat geeft geen extra tijd.</li><li>Elk geldig antwoord levert <strong>1 punt</strong> op. Hetzelfde woord mag je in een ronde maar één keer gebruiken.</li><li>Kijk zelf na of het antwoord bij de categorie past. Het spel gebruikt geen woordenboek of AI-jury. Bij een persoon telt de beginletter van de voornaam.</li></ol>
-    <h3>Samen aan tafel</h3><p>Kies <strong>Op scherm & papier</strong> voor een groot overzicht zonder invulvakjes. Iedereen neemt een blad met de nummers 1 tot 13. Start samen, schrijf op papier en vergelijk na afloop. Met ‘Volledig scherm’ gebruik je het hele scherm (Esc sluit dit af). Identieke antwoorden van verschillende spelers leveren geen punt op.</p><p>Je kunt ook na een ronde de uitdaging delen. Met een gedeelde link krijgt iedereen exact dezelfde ronde en speeltijd, ook met internetcategorieën. Spreek af wanneer jullie starten.</p>
+    <ol><li>Kies <strong>120 tot 480 seconden</strong> en zet een ronde klaar. Je ziet de letter; de categorieën blijven verborgen.</li><li>Klik op <strong>Play</strong>: de categorieën verschijnen en de timer begint.</li><li>Schrijf per categorie één antwoord dat met die letter begint. De timer loopt door als je van tabblad wisselt of herlaadt. Na herladen moet je zelf op Play klikken om de categorieën weer te zien; dat geeft geen extra tijd.</li><li>Elk geldig antwoord levert <strong>1 punt</strong> op. Hetzelfde woord mag je in een ronde maar één keer gebruiken.</li><li>Kijk zelf na of het antwoord bij de categorie past. Het spel gebruikt geen woordenboek of AI-jury. Bij een persoon telt de beginletter van de voornaam.</li></ol>
+    <h3>Niveau en pauze</h3><p><strong>6–12 jaar:</strong> 50 vertrouwde categorieën en makkelijke letters, zonder internetcategorieën. <strong>13 jaar en ouder:</strong> de volledige voorraad met optionele internetverrijking. Met <strong>Pauze</strong> stopt de klok en verdwijnen de categorieën en antwoorden. Play hervat waar je stopte, ook na herladen.</p><p>Nieuwe rondes gebruiken eerst de beschikbare letters voordat ze opnieuw aan de beurt komen. Twee nieuwe rondes achter elkaar krijgen nooit dezelfde letter. Een gedeelde uitdaging behoudt haar oorspronkelijke letter.</p><h3>Samen aan tafel</h3><p>Kies <strong>Op scherm & papier</strong> voor een groot overzicht zonder invulvakjes. Iedereen neemt een blad met de nummers 1 tot 13. Start samen, schrijf op papier en vergelijk na afloop. Met ‘Volledig scherm’ gebruik je het hele scherm (Esc sluit dit af). Identieke antwoorden van verschillende spelers leveren geen punt op.</p><p>Je kunt ook na een ronde de uitdaging delen. Met een gedeelde link krijgt iedereen exact dezelfde ronde en speeltijd, ook met internetcategorieën. Spreek af wanneer jullie starten.</p>
     <h3>Nieuwe categorieën van internet</h3><p>Bij het klaarzetten verkent het spel nieuwe categorieën in Nederlandstalige Wikipedia en bewaart bruikbare onderwerpen op dit toestel. Per ronde mengen we maximaal acht internetcategorieën met de vaste voorraad. We selecteren alleen internetcategorieën waarvoor de bron minstens twee artikeltitels met de gekozen letter bevat. Die controle bewijst niet dat alle mogelijke antwoorden correct zijn.</p><p class="small">Onderwerpen kunnen specialistisch zijn. Zonder internet speel je verder uit de bewaarde en vaste voorraad. De voorraad is uitbreidbaar, niet letterlijk oneindig; herhalingen blijven mogelijk. Je antwoorden worden niet naar Wikipedia gestuurd.</p>
     <p class="small">Nieuwe rondes combineren willekeurig categorieën en letters. Je kunt onbeperkt doorspelen; een combinatie kan ooit terugkomen. Q, X en Y doen niet mee.</p>
   </dialog>

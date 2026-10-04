@@ -6,11 +6,11 @@
 
 1. Kies **Zelf invullen** of **Op scherm & papier**.
 2. Kies een gehele speeltijd van **120 tot 480 seconden** (standaard 120).
-3. Klik **Ronde klaarzetten**. De klok loopt nog niet. Letter en categorieën blijven verborgen.
-4. Klik **Start de klok**. Nu pas verschijnen de letter en alle 13 categorieën en start de ingestelde tijd.
+3. Klik **Ronde klaarzetten**. De klok loopt nog niet. Je ziet de letter. De categorieën blijven verborgen.
+4. Klik **Play**. Nu pas verschijnen alle 13 categorieën en start de ingestelde tijd.
 5. Kijk na afloop samen na. **Nog een ronde** zet alleen een nieuwe ronde klaar: je start de klok altijd zelf.
 
-Ook na herladen onthult het spel niet automatisch een ronde. Bij een eerder gestarte ronde staat er **Hervat ronde**; de oorspronkelijke eindtijd blijft gelden. Herladen levert geen extra tijd op. De timer blijft ook doorlopen in een ander tabblad.
+Ook na herladen onthult het spel niet automatisch een ronde. Bij een eerder gestarte ronde staat er **Play · hervatten**; de oorspronkelijke eindtijd blijft gelden. Herladen levert geen extra tijd op. De timer blijft ook doorlopen in een ander tabblad.
 
 ## Categorieën van internet
 
@@ -48,3 +48,13 @@ node server.cjs
 Lokale preview: http://127.0.0.1:4173. Publiceer dist via de meegeleverde GitHub Actions-workflow. Onder Settings → Pages staat de bron op GitHub Actions.
 
 core.js bewaart de oorspronkelijke categorieën en v1-generator. online.js verzorgt internetverrijking, filtering en v2-deellinks. app.js beheert klaarzetten, timer en antwoorden. Behoud de volgorde van de basislijst voor compatibiliteit met v1-links.
+
+
+## Niveaus, letterkeuze en pauze
+
+- **6–12 jaar**: 50 geselecteerde eenvoudige categorieën en de letters ABDEGKLMNPRSTV. Geen internetcategorieën of internetaanvragen in dit niveau.
+- **13 jaar en ouder**: volledige vaste bank en optionele internetverrijking.
+- Het klaarzetscherm toont de letter vooraf. Alleen **Play** onthult de categorieën en start de klok.
+- **Pauze** bewaart de resterende tijd tot op de milliseconde en verbergt categorieën en antwoorden. **Play** hervat met die resterende tijd. Een gepauzeerde ronde blijft na herladen gepauzeerd. Herladen van een niet-gepauzeerde ronde stopt de timer niet.
+- Lokale lettergeschiedenis houdt per niveau bij welke letters al aan bod kwamen. Eerst worden de overige letters gebruikt; daarna start een nieuwe reeks. Opeenvolgende nieuwe rondes krijgen nooit dezelfde letter, ook bij niveauwissels. Dit werkt over herladen heen wanneer browseropslag beschikbaar is. Gedeelde uitdagingen en hervatten behouden bewust hun eigen letter.
+- Deellinks bevatten ook het niveau. Oude links zonder niveau gelden als 13 jaar en ouder.

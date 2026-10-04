@@ -42,19 +42,31 @@
       return {successes,fresh,entries:this.entries};
     }
   }
-  function makeEnrichedRound(entries,duration,fresh=[]){
+  const easyCategories=['Een dier','Een voornaam','Iets om te eten','Iets om te drinken','Een kledingstuk','Iets in de keuken','Een vervoermiddel','Een fruitsoort','Een groente','Een dessert','Iets op de boterham','Een gerecht','Een snack','Iets bij het ontbijt','Iets in de koelkast','Een vogel','Iets in de zee','Iets in het bos','Iets in de tuin','Iets op de boerderij','Iets dat vliegt','Iets dat zwemt','Een huisdier','Iets met poten','Een meubel','Iets in de badkamer','Iets in de slaapkamer','Iets in de woonkamer','Een spel','Een hobby','Iets in je schooltas','Iets in de supermarkt','Een cadeau','Een lichaamsdeel','Iets dat je blij maakt','Iets dat lawaai maakt','Iets dat lekker ruikt','Iets dat zacht is','Iets dat hard is','Iets dat rond is','Iets dat rood is','Iets dat groen is','Iets dat geel is','Iets dat koud is','Iets dat warm is','Iets met wielen','Iets op het strand','Iets in een speeltuin','Iets op een feestje','Iets dat je kunt dragen'];
+  const easyLetters='ABDEGKLMNPRSTV';
+  function remainingLetters(level,used=[],last=''){
+    const pool=(level==='kids'?easyLetters:core.letters).split('');
+    const remaining=pool.filter(x=>!used.includes(x)&&x!==last);
+    return remaining.length?remaining:pool.filter(x=>x!==last);
+  }
+  function pauseClock(state,now){const ms=Math.max(0,state.deadline-now);return {...state,phase:ms?'paused':'review',remainingMs:ms,remaining:Math.ceil(ms/1000)};}
+  function resumeClock(state,now){return {...state,phase:'playing',deadline:now+state.remainingMs};}
+  function makeEnrichedRound(entries,duration,fresh=[],settings={}){
     const code=core.randomCode(), base=core.makeRound(code);
-    // Prefer letters with enough internet categories, without revealing the letter during preparation.
-    const options=core.letters.split('').filter(letter=>entries.filter(x=>x.letters.includes(letter)).length>=3);
-    const letter=options.length?shuffle(options)[0]:base.letter;
+    const level=settings.level==='kids'?'kids':'older';
+    if(level==='kids'){entries=[];fresh=[];}
+    const available=remainingLetters(level,settings.usedLetters,settings.lastLetter);
+    const options=available.filter(letter=>entries.filter(x=>x.letters.includes(letter)).length>=3);
+    const letter=shuffle(options.length?options:available)[0];
     const pool=shuffle(entries.filter(x=>x.letters.includes(letter)));
     const preferred=shuffle(fresh.filter(x=>x.letters.includes(letter)));
     const online=[...new Map([...preferred,...pool].map(x=>[x.name,x])).values()].slice(0,8).map(x=>({name:x.name,source:x.source}));
     const key=name=>core.normalize(name).replace(/^(EEN|HET|DE) /,'');
     const used=new Set(online.map(x=>key(x.name)));
-    const local=[...base.categories,...shuffle(core.categories.map(name=>({name})))].filter(x=>{const k=key(x.name);if(used.has(k))return false;used.add(k);return true;}).slice(0,13-online.length).map(x=>({name:x.name}));
+    const bank=level==='kids'?shuffle(easyCategories.map(name=>({name}))):[...base.categories,...shuffle(core.categories.map(name=>({name})))];
+    const local=bank.filter(x=>{const k=key(x.name);if(used.has(k))return false;used.add(k);return true;}).slice(0,13-online.length).map(x=>({name:x.name}));
     const categories=shuffle([...online,...local]);
-    return {code,letter,duration,categories};
+    return {code,letter,duration,categories,level};
   }
   function validDuration(value){return Number.isInteger(value)&&value>=120&&value<=480;}
   function validRound(r){return r&&core.validCode(r.code)&&typeof r.letter==='string'&&r.letter.length===1&&core.letters.includes(r.letter)&&validDuration(r.duration)&&Array.isArray(r.categories)&&r.categories.length===13&&r.categories.every(x=>x&&typeof x.name==='string'&&x.name.length>0&&x.name.length<=100&&!/[<>\x00-\x1f]/.test(x.name)&&(!x.source||(typeof x.source==='string'&&validTopic(x.source))))&&new Set(r.categories.map(x=>core.normalize(x.name))).size===13;}
@@ -65,5 +77,5 @@
       const r=JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(hash.slice(4).replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0))));return validRound(r)?r:null;
     }catch{return null;}
   }
-  root.LetterpretOnline={Enricher,parseCategory,validTopic,validDuration,validRound,makeEnrichedRound,encodeRound,decodeRound};
+  root.LetterpretOnline={Enricher,parseCategory,validTopic,validDuration,validRound,makeEnrichedRound,encodeRound,decodeRound,easyCategories,easyLetters,remainingLetters,pauseClock,resumeClock};
 })(typeof window!=='undefined'?window:globalThis);

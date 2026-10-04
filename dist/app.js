@@ -5,6 +5,11 @@
   let challenge=online.decodeRound(location.hash);
   let localStore=null;try{localStore=window.localStorage;}catch{}
   const enrichment=new online.Enricher(window.fetch.bind(window),localStore);
+  let letterHistory={kids:[],older:[],last:''};
+  try{const saved=JSON.parse(localStore?.getItem('letterpret.letters.v1'));if(saved&&Array.isArray(saved.kids)&&Array.isArray(saved.older))letterHistory=saved;}catch{}
+  const levelName=level=>level==='kids'?'6–12 JAAR · MAKKELIJK':'13 JAAR EN OUDER';
+  function rememberLetter(data){const level=data.level==='kids'?'kids':'older',pool=level==='kids'?online.easyLetters:core.letters;let used=letterHistory[level].filter(x=>pool.includes(x));if(used.includes(data.letter))used=[];letterHistory[level]=[...used,data.letter];letterHistory.last=data.letter;try{localStore?.setItem('letterpret.letters.v1',JSON.stringify(letterHistory));}catch{}}
+  function updateLevel(){const kids=document.querySelector('input[name=level]:checked').value==='kids';$('onlineEnabled').disabled=kids;$('onlineEnabled').closest('label').hidden=kids;$('onlineInfo').hidden=kids;$('levelHint').textContent=kids?'Vertrouwde onderwerpen en makkelijke letters. Geen moeilijke internetcategorieën.':'Meer uitdaging, met optionele internetcategorieën.';}
   const announce=text=>{$('announcement').textContent=text;};
   const save=()=>{try{sessionStorage.setItem(storageKey,JSON.stringify(state));}catch{}};
   const round=()=>state.round;
@@ -15,18 +20,21 @@
     const seconds=duration('duration');if(seconds===null)return;
     preparing?.abort();const controller=new AbortController();preparing=controller;
     const mode=state?.mode||document.querySelector('input[name=mode]:checked').value;
+    const level=state?.round.level||document.querySelector('input[name=level]:checked').value;
+    const useInternet=level!=='kids'&&$('onlineEnabled').checked;
     state=null;save();resume=false;draft=null;hideRound();announce('');
-    $('readyTitle').textContent='Nog even geheim.';$('beginButton').textContent='Start de klok';$('beginButton').disabled=true;
-    $('readyHint').textContent='De letter en alle 13 categorieën blijven verborgen tot je op Start de klok klikt.';
+    $('readyTitle').textContent='Dit is jullie letter.';$('beginButton').textContent='Play · start de klok';$('beginButton').disabled=true;$('readyLetter').textContent='…';
+    $('readyHint').textContent='De 13 categorieën blijven verborgen tot je op Play klikt.';
     $('readyDuration').disabled=!!challenge;$('readyDuration').value=challenge?.duration||seconds;$('readyTime').textContent=format(Number($('readyDuration').value));
-    $('sourceStatus').textContent=challenge?'Gedeelde uitdaging klaarzetten…':$('onlineEnabled').checked?'Nieuwe categorieën zoeken op Wikipedia…':'Ronde klaarzetten uit de vaste voorraad…';
+    $('sourceStatus').textContent=challenge?'Gedeelde uitdaging klaarzetten…':useInternet?'Nieuwe categorieën zoeken op Wikipedia…':'Ronde klaarzetten uit de vaste voorraad…';
     let report=null;
-    if(!challenge&&$('onlineEnabled').checked){const timeout=setTimeout(()=>controller.abort(),10000);report=await enrichment.refresh(controller.signal);clearTimeout(timeout);}
+    if(!challenge&&useInternet){const timeout=setTimeout(()=>controller.abort(),10000);report=await enrichment.refresh(controller.signal);clearTimeout(timeout);}
     if(preparing!==controller)return;
-    const data=challenge||online.makeEnrichedRound($('onlineEnabled').checked?enrichment.entries:[],seconds,report?.fresh||[]);
+    const data=challenge||online.makeEnrichedRound(useInternet?enrichment.entries:[],seconds,report?.fresh||[],{level,usedLetters:letterHistory[level],lastLetter:letterHistory.last});
+    rememberLetter(data);$('readyLetter').textContent=data.letter;$('readyLevel').textContent=levelName(data.level);
     draft={round:data,mode};challenge=null;
     const count=data.categories.filter(x=>x.source).length;
-    $('sourceStatus').textContent=report?(report.successes?`${count} internetcategorieën in deze ronde · ${enrichment.entries.length} bewaard. Alles blijft verborgen tot de start.`:`Internet niet bereikbaar. Deze ronde gebruikt ${count} bewaarde internetcategorieën en de vaste voorraad.`):count?'Gedeelde categorieën staan klaar. De speeltijd hoort bij de uitdaging.':'13 categorieën staan klaar. De klok loopt nog niet.';
+    $('sourceStatus').textContent=report?(report.successes?`${count} internetcategorieën in deze ronde · ${enrichment.entries.length} bewaard. Categorieën blijven verborgen tot Play.`:`Internet niet bereikbaar. Deze ronde gebruikt ${count} bewaarde internetcategorieën en de vaste voorraad.`):count?'Gedeelde categorieën staan klaar. De speeltijd hoort bij de uitdaging.':'13 categorieën staan klaar. De klok loopt nog niet.';
     $('bankCount').textContent=`${core.categories.length} vaste + ${enrichment.entries.length} bewaarde internetcategorieën`;
     $('beginButton').disabled=false;preparing=null;
     window.scrollTo({top:0,behavior:'instant'});$('beginButton').focus({preventScroll:true});
@@ -35,6 +43,7 @@
   function showGame(){ visible=true;$('ready').hidden=true;$('intro').hidden=true;$('game').hidden=false; }
   function render(){
     const r=round();showGame();const paper=state.mode==='paper';document.body.classList.toggle('paper',paper);$('letter').textContent=r.letter;$('roundCode').textContent=`RONDE ${r.code}`;
+    $('roundLabel').textContent=levelName(r.level);$('pauseButton').hidden=state.phase!=='playing';
     $('fullscreenButton').hidden=!paper;$('finishButton').textContent=paper?'Ronde afronden':'Klaar met invullen';
     $('answers').replaceChildren();$('results').hidden=state.phase!=='review';$('finishButton').hidden=state.phase!=='playing';
     $('gameTitle').textContent=paper?(state.phase==='review'?'Pennen neer!':'Schrijf mee op papier.'):(state.phase==='review'?'De woorden liggen op tafel.':'Laat die woorden komen.');
@@ -58,7 +67,8 @@
     clearInterval(interval);
     $('shareFallback').hidden=true;
     if(!resume)state={round:{...draft.round,duration:seconds},mode:draft.mode,phase:'playing',answers:Array(13).fill(''),accepted:Array(13).fill(false),deadline:Date.now()+seconds*1000,remaining:seconds};
-    const wasResume=resume;resume=false;draft=null;save();announce(wasResume?'Ronde hervat. De oorspronkelijke eindtijd blijft gelden.':`De ronde is gestart. Speeltijd: ${state.round.duration} seconden.`);render();
+    else if(state.phase==='paused')state=online.resumeClock(state,Date.now());
+    const wasResume=resume;resume=false;draft=null;save();announce(wasResume?'Ronde hervat. De klok loopt verder.':`De ronde is gestart. Speeltijd: ${state.round.duration} seconden.`);render();
     if(state.phase==='playing')interval=setInterval(tick,200);window.scrollTo({top:0,behavior:'instant'});if(state.mode!=='paper'&&state.phase==='playing')$('answer-0').focus({preventScroll:true});
   }
   function tick(){
@@ -77,6 +87,15 @@
     announce(state.mode==='paper'?'Pennen neer! Vergelijk jullie antwoorden op papier.':expired?'Tijd om! Je antwoorden zijn vastgezet. Kijk ze hieronder na.':'Ronde afgerond. Kijk je antwoorden na.');
     $('nextButton').focus({preventScroll:true});
   }
+  function showPaused(){
+    hideRound();draft={round:state.round,mode:state.mode};resume=true;
+    $('readyTitle').textContent='Even pauze.';$('readyLetter').textContent=state.round.letter;$('readyLevel').textContent=levelName(state.round.level);
+    $('readyHint').textContent='De klok staat stil. De categorieën en antwoorden blijven verborgen tot je op Play klikt.';
+    $('readyDuration').value=state.round.duration;$('readyDuration').disabled=true;$('readyTime').textContent=format(state.remaining);
+    $('sourceStatus').textContent=`Nog ${state.remaining} seconden speeltijd. Je antwoorden zijn bewaard.`;
+    $('beginButton').textContent='Play · hervatten';$('beginButton').disabled=false;$('beginButton').focus({preventScroll:true});
+  }
+  function pause(){if(!state||state.phase!=='playing')return;if(Date.now()>=state.deadline){finish(true);return;}state=online.pauseClock(state,Date.now());save();showPaused();announce('Gepauzeerd. De klok staat stil.');}
   function renderReview(){
     const checks=core.inspect(state.answers,round().letter);
     checks.forEach((check,i)=>{
@@ -92,10 +111,12 @@
   }
   function updateScore(){ $('score').replaceChildren(document.createTextNode(String(state.accepted.filter(Boolean).length)));const max=document.createElement('span');max.textContent='/ 13';$('score').append(max); }
   function renderSources(){const sources=round().categories.filter(x=>x.source);$('sourceDetails').hidden=!sources.length;$('sourceDetails').open=false;$('sourceList').replaceChildren();for(const category of sources){const li=document.createElement('li'),a=document.createElement('a');a.textContent=category.name;a.href='https://nl.wikipedia.org/wiki/'+encodeURIComponent('Categorie:'+category.source);a.target='_blank';a.rel='noopener noreferrer';li.append(a);$('sourceList').append(li);}}
-  function home(){preparing?.abort();preparing=null;clearInterval(interval);visible=false;draft=null;state=null;resume=false;challenge=null;save();document.body.classList.remove('paper');$('game').hidden=true;$('ready').hidden=true;$('intro').hidden=false;$('answers').replaceChildren();$('shareFallback').hidden=true;$('startHint').textContent='De klok start pas bij ‘Start de klok’ op het volgende scherm.';announce('');history.replaceState(null,'',location.pathname+location.search);window.scrollTo({top:0,behavior:'instant'});$('startButton').focus({preventScroll:true});}
+  function home(){preparing?.abort();preparing=null;clearInterval(interval);visible=false;draft=null;state=null;resume=false;challenge=null;save();document.body.classList.remove('paper');$('game').hidden=true;$('ready').hidden=true;$('intro').hidden=false;$('answers').replaceChildren();$('shareFallback').hidden=true;$('startHint').textContent='Je ziet eerst de letter. De categorieën verschijnen pas bij Play.';announce('');history.replaceState(null,'',location.pathname+location.search);window.scrollTo({top:0,behavior:'instant'});$('startButton').focus({preventScroll:true});}
   $('answers').addEventListener('submit',e=>e.preventDefault());
   $('startButton').addEventListener('click',prepare);
   $('beginButton').addEventListener('click',start);
+  $('pauseButton').addEventListener('click',pause);
+  document.querySelectorAll('input[name=level]').forEach(input=>input.addEventListener('change',updateLevel));
   $('durationRange').addEventListener('input',()=>$('duration').value=$('durationRange').value);
   $('duration').addEventListener('input',()=>{if(online.validDuration(Number($('duration').value)))$('durationRange').value=$('duration').value;});
   $('readyDuration').addEventListener('input',()=>{$('readyTime').textContent=online.validDuration(Number($('readyDuration').value))?format(Number($('readyDuration').value)):'120–480 sec.';});
@@ -120,8 +141,11 @@
   else if(location.hash){announce('Deze uitdagingslink is ongeldig. Je kunt wel een nieuwe ronde starten.');}
   try{
     const cached=JSON.parse(sessionStorage.getItem(storageKey));
-    if(!challenge&&cached&&online.validRound(cached.round)&&cached.phase==='playing'&&['digital','paper'].includes(cached.mode)&&Array.isArray(cached.answers)&&cached.answers.length===13&&cached.answers.every(x=>typeof x==='string'&&x.length<=90)&&Array.isArray(cached.accepted)&&cached.accepted.length===13&&cached.accepted.every(x=>typeof x==='boolean')&&Number.isFinite(cached.deadline)&&Number.isFinite(cached.remaining)&&cached.remaining>=0&&cached.remaining<=cached.round.duration){
-      state=cached;draft={round:cached.round,mode:cached.mode};resume=true;hideRound();$('readyTitle').textContent='Je ronde staat verborgen.';$('readyHint').textContent='Klik op Hervat ronde om je categorieën en antwoorden weer te tonen.';$('beginButton').textContent='Hervat ronde';$('beginButton').disabled=false;$('readyDuration').value=cached.round.duration;$('readyDuration').disabled=true;$('readyTime').textContent=format(cached.round.duration);$('sourceStatus').textContent='Je eerdere timer loopt door. Klik op Hervat ronde om je antwoorden en categorieën weer te tonen. Dit geeft geen extra tijd.';
+    if(!challenge&&cached&&online.validRound(cached.round)&&['playing','paused'].includes(cached.phase)&&(cached.phase!=='paused'||(Number.isFinite(cached.remainingMs)&&cached.remainingMs>0&&cached.remainingMs<=cached.round.duration*1000))&&['digital','paper'].includes(cached.mode)&&Array.isArray(cached.answers)&&cached.answers.length===13&&cached.answers.every(x=>typeof x==='string'&&x.length<=90)&&Array.isArray(cached.accepted)&&cached.accepted.length===13&&cached.accepted.every(x=>typeof x==='boolean')&&Number.isFinite(cached.deadline)&&Number.isFinite(cached.remaining)&&cached.remaining>=0&&cached.remaining<=cached.round.duration){
+      state=cached;draft={round:cached.round,mode:cached.mode};resume=true;
+      if(cached.phase==='paused')showPaused();
+      else{hideRound();$('readyLetter').textContent=cached.round.letter;$('readyLevel').textContent=levelName(cached.round.level);$('readyTitle').textContent='Je ronde staat verborgen.';$('readyHint').textContent='Klik op Play om je categorieën en antwoorden weer te tonen.';$('beginButton').textContent='Play · hervatten';$('beginButton').disabled=false;$('readyDuration').value=cached.round.duration;$('readyDuration').disabled=true;$('readyTime').textContent=format(cached.round.duration);$('sourceStatus').textContent='Je eerdere timer loopt door. Play toont je ronde weer. Gebruik tijdens het spel Pauze om de klok stil te zetten.';}
     }
   }catch{}
+  updateLevel();
 })();
