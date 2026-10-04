@@ -18,7 +18,7 @@ Internetverrijking staat standaard aan en kan vóór een ronde worden uitgezet. 
 
 - Per voorbereiding maximaal zes categorieaanvragen, met een totale wachttijd van maximaal tien seconden. Er wordt niets opgehaald tijdens de actieve ronde.
 - Een onderwerp moet door de naamfilters komen, minstens tien bruikbare artikeltitels hebben en voor minstens drie letters telkens twee voorbeelden bevatten. Voor de uiteindelijke ronde worden alleen ondersteunde beginletters gekozen.
-- Maximaal acht internetcategorieën per ronde, aangevuld uit de 143 vaste categorieën. Nederlandse categorienamen worden als tekst getoond; er wordt geen HTML van Wikipedia uitgevoerd.
+- Maximaal drie internetcategorieën per ronde, gemengd met zelfbedachte opdrachten en klassiekers. Nederlandse categorienamen worden als tekst getoond; er wordt geen HTML van Wikipedia uitgevoerd.
 - Via subcategorieën groeit de ontdekkingsvoorraad. Een roulerende lokale cache bewaart maximaal 2.000 bruikbare categorieën en 4.000 te verkennen onderwerpen. Geen gegarandeerd unieke of letterlijk oneindige voorraad: herhalingen en specialistische onderwerpen blijven mogelijk.
 - Bij netwerkstoringen blijven bewaarde categorieën beschikbaar. Bij geen cache wordt de vaste voorraad gebruikt. De interface vermeldt of de bron bereikbaar was.
 - Bij uitgeschakelde internetverrijking worden alleen vaste categorieën gebruikt en worden geen API-aanvragen gedaan.
@@ -52,9 +52,15 @@ core.js bewaart de oorspronkelijke categorieën en v1-generator. online.js verzo
 
 ## Niveaus, letterkeuze en pauze
 
-- **6–12 jaar**: 50 geselecteerde eenvoudige categorieën en de letters ABDEGKLMNPRSTV. Geen internetcategorieën of internetaanvragen in dit niveau.
+- **6–12 jaar**: 130 eenvoudige categorieën, waaronder 80 zelfbedachte opdrachten en de letters ABDEGKLMNPRSTV. Geen internetcategorieën of internetaanvragen in dit niveau.
 - **13 jaar en ouder**: volledige vaste bank en optionele internetverrijking.
 - Het klaarzetscherm toont de letter vooraf. Alleen **Play** onthult de categorieën en start de klok.
 - **Pauze** bewaart de resterende tijd tot op de milliseconde en verbergt categorieën en antwoorden. **Play** hervat met die resterende tijd. Een gepauzeerde ronde blijft na herladen gepauzeerd. Herladen van een niet-gepauzeerde ronde stopt de timer niet.
 - Lokale lettergeschiedenis houdt per niveau bij welke letters al aan bod kwamen. Eerst worden de overige letters gebruikt; daarna start een nieuwe reeks. Opeenvolgende nieuwe rondes krijgen nooit dezelfde letter, ook bij niveauwissels. Dit werkt over herladen heen wanneer browseropslag beschikbaar is. Gedeelde uitdagingen en hervatten behouden bewust hun eigen letter.
 - Deellinks bevatten ook het niveau. Oude links zonder niveau gelden als 13 jaar en ouder.
+
+## Creatieve categorieën
+
+200 zelfbedachte opdrachten: 80 voor kinderen en 120 voor oudere spelers. Nieuwe rondes bevatten minstens acht creatieve categorieën, met maximaal drie internetcategorieën. Bij fantasievragen mogen spelers antwoorden verzinnen; het eerste woord begint met de rondeletter en de groep beoordeelt of het past.
+
+Per niveau worden de laatste 52 klaargezette categorieën (vier rondes) lokaal bewaard en overgeslagen. Deze geschiedenis werkt ook na herladen als browseropslag beschikbaar is. Gedeelde uitdagingen behouden hun exacte inhoud. De generator valt bij een uitgeputte voorraad terug op eerdere categorieën.

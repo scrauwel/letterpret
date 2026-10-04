@@ -7,9 +7,12 @@
   const enrichment=new online.Enricher(window.fetch.bind(window),localStore);
   let letterHistory={kids:[],older:[],last:''};
   try{const saved=JSON.parse(localStore?.getItem('letterpret.letters.v1'));if(saved&&Array.isArray(saved.kids)&&Array.isArray(saved.older))letterHistory=saved;}catch{}
+  let categoryHistory={kids:[],older:[]};
+  try{const saved=JSON.parse(localStore?.getItem('letterpret.categories.v1'));if(saved&&['kids','older'].every(k=>Array.isArray(saved[k])&&saved[k].every(x=>typeof x==='string')))categoryHistory={kids:saved.kids.slice(-52),older:saved.older.slice(-52)};}catch{}
+  function rememberCategories(data){const level=data.level==='kids'?'kids':'older';categoryHistory[level]=[...categoryHistory[level],...data.categories.map(x=>x.name)].slice(-52);try{localStore?.setItem('letterpret.categories.v1',JSON.stringify(categoryHistory));}catch{}}
   const levelName=level=>level==='kids'?'6–12 JAAR · MAKKELIJK':'13 JAAR EN OUDER';
   function rememberLetter(data){const level=data.level==='kids'?'kids':'older',pool=level==='kids'?online.easyLetters:core.letters;let used=letterHistory[level].filter(x=>pool.includes(x));if(used.includes(data.letter))used=[];letterHistory[level]=[...used,data.letter];letterHistory.last=data.letter;try{localStore?.setItem('letterpret.letters.v1',JSON.stringify(letterHistory));}catch{}}
-  function updateLevel(){const kids=document.querySelector('input[name=level]:checked').value==='kids';$('onlineEnabled').disabled=kids;$('onlineEnabled').closest('label').hidden=kids;$('onlineInfo').hidden=kids;$('levelHint').textContent=kids?'Vertrouwde onderwerpen en makkelijke letters. Geen moeilijke internetcategorieën.':'Meer uitdaging, met optionele internetcategorieën.';}
+  function updateLevel(){const kids=document.querySelector('input[name=level]:checked').value==='kids';$('onlineEnabled').disabled=kids;$('onlineEnabled').closest('label').hidden=kids;$('onlineInfo').hidden=kids;$('levelHint').textContent=kids?'Speelse fantasie, herkenbare situaties en makkelijke letters.':'Verrassende situaties en grappige denkopdrachten, met optionele internetcategorieën.';}
   const announce=text=>{$('announcement').textContent=text;};
   const save=()=>{try{sessionStorage.setItem(storageKey,JSON.stringify(state));}catch{}};
   const round=()=>state.round;
@@ -30,12 +33,12 @@
     let report=null;
     if(!challenge&&useInternet){const timeout=setTimeout(()=>controller.abort(),10000);report=await enrichment.refresh(controller.signal);clearTimeout(timeout);}
     if(preparing!==controller)return;
-    const data=challenge||online.makeEnrichedRound(useInternet?enrichment.entries:[],seconds,report?.fresh||[],{level,usedLetters:letterHistory[level],lastLetter:letterHistory.last});
-    rememberLetter(data);$('readyLetter').textContent=data.letter;$('readyLevel').textContent=levelName(data.level);
+    const data=challenge||online.makeEnrichedRound(useInternet?enrichment.entries:[],seconds,report?.fresh||[],{level,usedLetters:letterHistory[level],lastLetter:letterHistory.last,recentCategories:categoryHistory[level]});
+    rememberLetter(data);rememberCategories(data);$('readyLetter').textContent=data.letter;$('readyLevel').textContent=levelName(data.level);
     draft={round:data,mode};challenge=null;
     const count=data.categories.filter(x=>x.source).length;
     $('sourceStatus').textContent=report?(report.successes?`${count} internetcategorieën in deze ronde · ${enrichment.entries.length} bewaard. Categorieën blijven verborgen tot Play.`:`Internet niet bereikbaar. Deze ronde gebruikt ${count} bewaarde internetcategorieën en de vaste voorraad.`):count?'Gedeelde categorieën staan klaar. De speeltijd hoort bij de uitdaging.':'13 categorieën staan klaar. De klok loopt nog niet.';
-    $('bankCount').textContent=`${core.categories.length} vaste + ${enrichment.entries.length} bewaarde internetcategorieën`;
+    $('bankCount').textContent=`${online.creativeKids.length+online.creativeOlder.length} zelfbedachte categorieën + vertrouwde klassiekers + ${enrichment.entries.length} internetcategorieën`;
     $('beginButton').disabled=false;preparing=null;
     window.scrollTo({top:0,behavior:'instant'});$('beginButton').focus({preventScroll:true});
   }
@@ -136,7 +139,7 @@
   });
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick();});
   window.addEventListener('pageshow',tick);
-  $('bankCount').textContent=`${core.categories.length} vaste + ${enrichment.entries.length} bewaarde internetcategorieën`;
+  $('bankCount').textContent=`${online.creativeKids.length+online.creativeOlder.length} zelfbedachte categorieën + vertrouwde klassiekers + ${enrichment.entries.length} internetcategorieën`;
   if(challenge){$('duration').value=challenge.duration;$('durationRange').value=challenge.duration;$('startHint').textContent='Gedeelde uitdaging: dezelfde letter, categorieën en tijd. Start zelf de klok.';}
   else if(location.hash){announce('Deze uitdagingslink is ongeldig. Je kunt wel een nieuwe ronde starten.');}
   try{

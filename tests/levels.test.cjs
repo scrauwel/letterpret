@@ -1,7 +1,7 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');
 require('../dist/core.js');require('../dist/online.js');const game=globalThis.LetterpretOnline;
 test('Kinderniveau bevat uitsluitend eenvoudige categorieën en letters',()=>{
- for(let i=0;i<100;i++){const r=game.makeEnrichedRound([{name:'Belgisch acteur',source:'Belgisch acteur',letters:'ABCD'}],120,[],{level:'kids'});assert.equal(r.level,'kids');assert.ok(game.easyLetters.includes(r.letter));assert.equal(r.categories.length,13);assert.ok(r.categories.every(c=>game.easyCategories.includes(c.name)&&!c.source));}
+ for(let i=0;i<100;i++){const r=game.makeEnrichedRound([{name:'Belgisch acteur',source:'Belgisch acteur',letters:'ABCD'}],120,[],{level:'kids'});assert.equal(r.level,'kids');assert.ok(game.easyLetters.includes(r.letter));assert.equal(r.categories.length,13);assert.ok(r.categories.every(c=>game.kidsBank.includes(c.name)&&!c.source));}
 });
 test('Letters wisselen altijd, ook bij een nieuwe reeks en niveauwissel',()=>{
  const history={kids:[],older:[]};let last='';
