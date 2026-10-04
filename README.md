@@ -1,42 +1,50 @@
 # Letterpret
 
-Een Nederlandstalig woordspel geïnspireerd op het categorieënspel: **één letter, 13 categorieën, 120 seconden**. Een zelfstandig spel zonder officiële band met Scattergories of Hasbro.
+**[Speel Letterpret](https://scrauwel.github.io/letterpret/)** — een Nederlandstalig woordspel op je toestel of op een groot scherm met pen en papier. Zelfstandig spel, zonder officiële band met Scattergories of Hasbro.
 
 ## Spelen
 
-Open `dist/index.html` in je browser, of open de GitHub Pages-link van deze repository. Geen installatie, account, betaalde dienst of API-sleutel nodig.
+1. Kies **Zelf invullen** of **Op scherm & papier**.
+2. Kies een gehele speeltijd van **120 tot 480 seconden** (standaard 120).
+3. Klik **Ronde klaarzetten**. De klok loopt nog niet. Letter en categorieën blijven verborgen.
+4. Klik **Start de klok**. Nu pas verschijnen de letter en alle 13 categorieën en start de ingestelde tijd.
+5. Kijk na afloop samen na. **Nog een ronde** zet alleen een nieuwe ronde klaar: je start de klok altijd zelf.
 
-- 143 Nederlandstalige categorieën en 23 letters (geen Q, X en Y).
-- Iedere ronde kiest 13 verschillende categorieën en één letter. Onbeperkt rondes spelen; combinaties zijn niet letterlijk oneindig en kunnen terugkomen.
-- De timer werkt met een eindtijd: van tabblad wisselen of herladen geeft geen extra tijd.
-- Antwoorden worden alleen tijdens deze browsersessie op dit toestel bewaard (sessionStorage). Geen server, tracking of externe lettertypen.
-- Automatische controle van beginletter en herhaalde woorden. De speler beoordeelt zelf of een antwoord inhoudelijk past. De getoonde score is dus een zelf beoordeelde score.
-- Deel na een ronde een link naar dezelfde uitdaging. Elke speler start zelf; geen live multiplayer of automatische vergelijking tussen spelers.
-- Twee speelstanden: **Zelf invullen** op je toestel, en **Op scherm & papier** met alle categorieën groot in beeld, zonder invulvakjes. Ideaal voor televisie of projector. Iedere speler nummert zijn blad van 1 tot 13. Een knop opent volledig scherm (Esc sluit het af). Dezelfde timer van 120 seconden geldt; na afloop blijven de categorieën zichtbaar.
-- Hoofdletters en accenten worden bij de eenvoudige controle gelijk behandeld. Het eerste voorkomen van een dubbel woord kan een punt krijgen; latere herhalingen niet. Lidwoorden worden niet overgeslagen.
+Ook na herladen onthult het spel niet automatisch een ronde. Bij een eerder gestarte ronde staat er **Hervat ronde**; de oorspronkelijke eindtijd blijft gelden. Herladen levert geen extra tijd op. De timer blijft ook doorlopen in een ander tabblad.
 
-## GitHub Pages
+## Categorieën van internet
 
-Publiceer de map `dist` met de meegeleverde workflow. Kies onder **Settings → Pages → Build and deployment → Source: GitHub Actions**. De workflow draait bij een push naar `main` en kan ook handmatig gestart worden.
+Internetverrijking staat standaard aan en kan vóór een ronde worden uitgezet. Bij het klaarzetten verkent de browser categorieën en subcategorieën van **Nederlandstalige Wikipedia** via de publieke MediaWiki-API. Gevonden nieuwe onderwerpen worden gebruikt bij latere rondes; het spel heeft dus geen uitsluitend vaste lijst van internetcategorieën.
 
-## Lokaal testen
+- Per voorbereiding maximaal zes categorieaanvragen, met een totale wachttijd van maximaal tien seconden. Er wordt niets opgehaald tijdens de actieve ronde.
+- Een onderwerp moet door de naamfilters komen, minstens tien bruikbare artikeltitels hebben en voor minstens drie letters telkens twee voorbeelden bevatten. Voor de uiteindelijke ronde worden alleen ondersteunde beginletters gekozen.
+- Maximaal acht internetcategorieën per ronde, aangevuld uit de 143 vaste categorieën. Nederlandse categorienamen worden als tekst getoond; er wordt geen HTML van Wikipedia uitgevoerd.
+- Via subcategorieën groeit de ontdekkingsvoorraad. Een roulerende lokale cache bewaart maximaal 2.000 bruikbare categorieën en 4.000 te verkennen onderwerpen. Geen gegarandeerd unieke of letterlijk oneindige voorraad: herhalingen en specialistische onderwerpen blijven mogelijk.
+- Bij netwerkstoringen blijven bewaarde categorieën beschikbaar. Bij geen cache wordt de vaste voorraad gebruikt. De interface vermeldt of de bron bereikbaar was.
+- Bij uitgeschakelde internetverrijking worden alleen vaste categorieën gebruikt en worden geen API-aanvragen gedaan.
+- Bronlinks staan na afloop onder **Internetbronnen van deze ronde**. De bron is een hulpmiddel, geen onfeilbare scheidsrechter. Bij persoonsnamen telt de eerste letter van de voornaam.
 
-Met Node.js (geen extra packages):
+Filters beperken ongeschikte onderwerpen, maar er is geen handmatige beoordeling van iedere internetcategorie. Het spel bepaalt zelf geen inhoudelijke juistheid van antwoorden.
+
+API-documentatie: [Categorymembers](https://www.mediawiki.org/wiki/API:Categorymembers), [Cross-site requests](https://www.mediawiki.org/wiki/API:Cross-site_requests). Broninhoud en categorisering: [Nederlandstalige Wikipedia](https://nl.wikipedia.org/), zie de [hergebruikvoorwaarden](https://nl.wikipedia.org/wiki/Wikipedia:Auteursrechten). Er worden geen artikelteksten gepubliceerd.
+
+## Delen en gegevens
+
+Een deellink bevat de exacte 13 categorieën, letter, bronverwijzingen en speeltijd. Daardoor blijft een verrijkte ronde hetzelfde op een ander toestel, ook zonder toegang tot Wikipedia. Oude v1-links blijven werken met 120 seconden. Iedereen start zijn eigen klok; er is geen live spelkamer.
+
+Antwoorden worden alleen in sessionStorage op dit toestel bewaard. De internetvoorraad wordt in localStorage bewaard. Geen account, betaalde API, analytics of server voor antwoorden. Wikipedia ontvangt bronaanvragen vanuit de browser (met de gebruikelijke netwerkgegevens), maar geen ingevoerde antwoorden. De deellink bevat evenmin antwoorden.
+
+Hoofdletters en accenten worden bij de eenvoudige beginlettercontrole gelijk behandeld. Het eerste voorkomen van een dubbel woord kan een punt krijgen; latere herhalingen niet. Lidwoorden worden niet overgeslagen. De speler vinkt zelf inhoudelijk ongeldige of door medespelers herhaalde antwoorden uit.
+
+## Ontwikkelen en publiceren
+
+Open dist/index.html direct of start met Node.js, zonder extra packages:
 
 ```sh
-node --test tests/core.test.cjs
+node --test tests/*.test.cjs
 node server.cjs
 ```
 
-Open daarna http://localhost:4173. De server bindt alleen lokaal.
+Lokale preview: http://127.0.0.1:4173. Publiceer dist via de meegeleverde GitHub Actions-workflow. Onder Settings → Pages staat de bron op GitHub Actions.
 
-Test ook op je telefoon: start een ronde, vul antwoorden in, laat de timer aflopen, controleer de score en probeer een gedeelde uitdagingslink in een nieuw browservenster.
-
-## Bestanden
-
-- `dist/index.html` — interface en spelregels
-- `dist/style.css` — mobiel en desktop
-- `dist/core.js` — vaste categorieënlijst, rondegenerator en antwoordcontrole
-- `dist/app.js` — timer, invoer, score en delen
-
-Behoud de volgorde van de categorieën in versie 1: de gedeelde rondecode gebruikt die volgorde. Maak bij een gewijzigde lijst een nieuwe linkversie.
+core.js bewaart de oorspronkelijke categorieën en v1-generator. online.js verzorgt internetverrijking, filtering en v2-deellinks. app.js beheert klaarzetten, timer en antwoorden. Behoud de volgorde van de basislijst voor compatibiliteit met v1-links.

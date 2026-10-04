@@ -1,14 +1,38 @@
 (() => {
   'use strict';
-  const $=id=>document.getElementById(id), core=window.Letterpret, storageKey='letterpret.v1';
-  let state=null, interval=null;
-  const hashMatch=location.hash.match(/^#v1-([0-9A-Z]{7})$/);
-  let challenge=hashMatch&&core.validCode(hashMatch[1])?hashMatch[1]:null;
+  const $=id=>document.getElementById(id), core=window.Letterpret, online=window.LetterpretOnline, storageKey='letterpret.v2';
+  let state=null, interval=null, draft=null, preparing=null, visible=false, resume=false;
+  let challenge=online.decodeRound(location.hash);
+  let localStore=null;try{localStore=window.localStorage;}catch{}
+  const enrichment=new online.Enricher(window.fetch.bind(window),localStore);
   const announce=text=>{$('announcement').textContent=text;};
   const save=()=>{try{sessionStorage.setItem(storageKey,JSON.stringify(state));}catch{}};
-  const round=()=>core.makeRound(state.code);
+  const round=()=>state.round;
+  const format=seconds=>`${Math.floor(seconds/60).toString().padStart(2,'0')}:${(seconds%60).toString().padStart(2,'0')}`;
+  function duration(id){const el=$(id), value=Number(el.value);el.setCustomValidity('');if(!online.validDuration(value)){el.setCustomValidity('Kies een geheel aantal seconden tussen 120 en 480.');el.reportValidity();return null;}return value;}
+  function hideRound(){visible=false;clearInterval(interval);$('game').hidden=true;$('answers').replaceChildren();$('letter').textContent='?';$('sourceList').replaceChildren();$('ready').hidden=false;$('intro').hidden=true;document.body.classList.remove('paper');}
+  async function prepare(){
+    const seconds=duration('duration');if(seconds===null)return;
+    preparing?.abort();const controller=new AbortController();preparing=controller;
+    const mode=state?.mode||document.querySelector('input[name=mode]:checked').value;
+    state=null;save();resume=false;draft=null;hideRound();announce('');
+    $('readyTitle').textContent='Nog even geheim.';$('beginButton').textContent='Start de klok';$('beginButton').disabled=true;
+    $('readyHint').textContent='De letter en alle 13 categorieën blijven verborgen tot je op Start de klok klikt.';
+    $('readyDuration').disabled=!!challenge;$('readyDuration').value=challenge?.duration||seconds;$('readyTime').textContent=format(Number($('readyDuration').value));
+    $('sourceStatus').textContent=challenge?'Gedeelde uitdaging klaarzetten…':$('onlineEnabled').checked?'Nieuwe categorieën zoeken op Wikipedia…':'Ronde klaarzetten uit de vaste voorraad…';
+    let report=null;
+    if(!challenge&&$('onlineEnabled').checked){const timeout=setTimeout(()=>controller.abort(),10000);report=await enrichment.refresh(controller.signal);clearTimeout(timeout);}
+    if(preparing!==controller)return;
+    const data=challenge||online.makeEnrichedRound($('onlineEnabled').checked?enrichment.entries:[],seconds,report?.fresh||[]);
+    draft={round:data,mode};challenge=null;
+    const count=data.categories.filter(x=>x.source).length;
+    $('sourceStatus').textContent=report?(report.successes?`${count} internetcategorieën in deze ronde · ${enrichment.entries.length} bewaard. Alles blijft verborgen tot de start.`:`Internet niet bereikbaar. Deze ronde gebruikt ${count} bewaarde internetcategorieën en de vaste voorraad.`):count?'Gedeelde categorieën staan klaar. De speeltijd hoort bij de uitdaging.':'13 categorieën staan klaar. De klok loopt nog niet.';
+    $('bankCount').textContent=`${core.categories.length} vaste + ${enrichment.entries.length} bewaarde internetcategorieën`;
+    $('beginButton').disabled=false;preparing=null;
+    window.scrollTo({top:0,behavior:'instant'});$('beginButton').focus({preventScroll:true});
+  }
   function countFilled(){$('filled').textContent=`${state.answers.filter(x=>x.trim()).length} / 13`;}
-  function showGame(){ $('intro').hidden=true;$('game').hidden=false; }
+  function showGame(){ visible=true;$('ready').hidden=true;$('intro').hidden=true;$('game').hidden=false; }
   function render(){
     const r=round();showGame();const paper=state.mode==='paper';document.body.classList.toggle('paper',paper);$('letter').textContent=r.letter;$('roundCode').textContent=`RONDE ${r.code}`;
     $('fullscreenButton').hidden=!paper;$('finishButton').textContent=paper?'Ronde afronden':'Klaar met invullen';
@@ -26,20 +50,22 @@
       input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();$(`answer-${i+1}`)?.focus();}});
       control.append(input);row.append(label,control);$('answers').append(row);
     });
-    countFilled();if(state.phase==='review')renderReview();tick();
+    countFilled();if(state.phase==='review'){renderReview();renderSources();}tick();
   }
-  function start(code,mode){
+  function start(){
+    if(!draft||preparing)return;
+    const seconds=duration('readyDuration');if(seconds===null)return;
     clearInterval(interval);
     $('shareFallback').hidden=true;
-    state={code:code||core.randomCode(),mode:mode||state?.mode||document.querySelector('input[name=mode]:checked').value,phase:'playing',answers:Array(13).fill(''),accepted:Array(13).fill(false),deadline:Date.now()+120000,remaining:120};
-    challenge=null;save();announce('De ronde is gestart. Je hebt 120 seconden.');render();
-    interval=setInterval(tick,200);window.scrollTo({top:0,behavior:'instant'});if(state.mode!=='paper')$('answer-0').focus({preventScroll:true});
+    if(!resume)state={round:{...draft.round,duration:seconds},mode:draft.mode,phase:'playing',answers:Array(13).fill(''),accepted:Array(13).fill(false),deadline:Date.now()+seconds*1000,remaining:seconds};
+    const wasResume=resume;resume=false;draft=null;save();announce(wasResume?'Ronde hervat. De oorspronkelijke eindtijd blijft gelden.':`De ronde is gestart. Speeltijd: ${state.round.duration} seconden.`);render();
+    if(state.phase==='playing')interval=setInterval(tick,200);window.scrollTo({top:0,behavior:'instant'});if(state.mode!=='paper'&&state.phase==='playing')$('answer-0').focus({preventScroll:true});
   }
   function tick(){
-    if(!state)return;
+    if(!state||!visible)return;
     const remaining=state.phase==='playing'?Math.max(0,Math.ceil((state.deadline-Date.now())/1000)):state.remaining;
-    $('timer').textContent=`${Math.floor(remaining/60).toString().padStart(2,'0')}:${(remaining%60).toString().padStart(2,'0')}`;
-    $('timeFill').style.width=`${remaining/120*100}%`;
+    $('timer').textContent=format(remaining);
+    $('timeFill').style.width=`${remaining/state.round.duration*100}%`;
     document.querySelector('.dashboard').classList.toggle('urgent',state.phase==='playing'&&remaining<=20);
     $('timerCaption').textContent=state.phase==='review'?(remaining===0?'Tijd om!':'Ronde afgerond'):'Je tijd loopt…';
     if(state.phase==='playing'&&remaining===0)finish(true);
@@ -65,29 +91,37 @@
     });updateScore();
   }
   function updateScore(){ $('score').replaceChildren(document.createTextNode(String(state.accepted.filter(Boolean).length)));const max=document.createElement('span');max.textContent='/ 13';$('score').append(max); }
+  function renderSources(){const sources=round().categories.filter(x=>x.source);$('sourceDetails').hidden=!sources.length;$('sourceDetails').open=false;$('sourceList').replaceChildren();for(const category of sources){const li=document.createElement('li'),a=document.createElement('a');a.textContent=category.name;a.href='https://nl.wikipedia.org/wiki/'+encodeURIComponent('Categorie:'+category.source);a.target='_blank';a.rel='noopener noreferrer';li.append(a);$('sourceList').append(li);}}
+  function home(){preparing?.abort();preparing=null;clearInterval(interval);visible=false;draft=null;state=null;resume=false;challenge=null;save();document.body.classList.remove('paper');$('game').hidden=true;$('ready').hidden=true;$('intro').hidden=false;$('answers').replaceChildren();$('shareFallback').hidden=true;$('startHint').textContent='De klok start pas bij ‘Start de klok’ op het volgende scherm.';announce('');history.replaceState(null,'',location.pathname+location.search);window.scrollTo({top:0,behavior:'instant'});$('startButton').focus({preventScroll:true});}
   $('answers').addEventListener('submit',e=>e.preventDefault());
-  $('startButton').addEventListener('click',()=>start(challenge));
+  $('startButton').addEventListener('click',prepare);
+  $('beginButton').addEventListener('click',start);
+  $('durationRange').addEventListener('input',()=>$('duration').value=$('durationRange').value);
+  $('duration').addEventListener('input',()=>{if(online.validDuration(Number($('duration').value)))$('durationRange').value=$('duration').value;});
+  $('readyDuration').addEventListener('input',()=>{$('readyTime').textContent=online.validDuration(Number($('readyDuration').value))?format(Number($('readyDuration').value)):'120–480 sec.';});
   $('finishButton').addEventListener('click',()=>finish());
-  $('nextButton').addEventListener('click',()=>{history.replaceState(null,'',location.pathname+location.search);start();});
-  $('homeButton').addEventListener('click',()=>{clearInterval(interval);state=null;save();document.body.classList.remove('paper');$('game').hidden=true;$('intro').hidden=false;$('shareFallback').hidden=true;$('startHint').textContent='De letter en categorieën verschijnen zodra je start.';announce('');history.replaceState(null,'',location.pathname+location.search);window.scrollTo({top:0,behavior:'instant'});$('startButton').focus({preventScroll:true});});
-  $('fullscreenButton').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{announce('Volledig scherm is niet beschikbaar in deze browser. Je kunt ook de schermvullende stand van je browser gebruiken.');}});
-  document.addEventListener('fullscreenchange',()=>{$('fullscreenButton').textContent=document.fullscreenElement?'Verlaat volledig scherm':'Volledig scherm';});
+  $('nextButton').addEventListener('click',()=>{$('duration').value=state.round.duration;history.replaceState(null,'',location.pathname+location.search);prepare();});
+  $('homeButton').addEventListener('click',home);$('readyBack').addEventListener('click',home);
+  const fullscreen=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{announce('Volledig scherm is niet beschikbaar in deze browser. Je kunt ook de schermvullende stand van je browser gebruiken.');}};
+  $('fullscreenButton').addEventListener('click',fullscreen);$('readyFullscreen').addEventListener('click',fullscreen);
+  document.addEventListener('fullscreenchange',()=>{for(const id of ['fullscreenButton','readyFullscreen'])$(id).textContent=document.fullscreenElement?'Verlaat volledig scherm':'Volledig scherm';});
   $('rulesButton').addEventListener('click',()=>$('rulesDialog').showModal());
   $('closeRules').addEventListener('click',()=>$('rulesDialog').close());
   $('shareButton').addEventListener('click',async()=>{
-    const url=new URL(location.href);url.hash=`v1-${state.code}`;
+    const url=new URL(location.href);url.hash=online.encodeRound(state.round);
+    $('shareFallback').hidden=false;$('shareUrl').value=url.href;
     try{if(!['http:','https:'].includes(url.protocol))throw new Error('Lokaal bestand');await navigator.clipboard.writeText(url.href);announce('Link gekopieerd. De ontvanger krijgt dezelfde letter en categorieën.');}
     catch{$('shareFallback').hidden=false;$('shareUrl').value=url.href;$('shareUrl').focus();$('shareUrl').select();announce(url.protocol==='file:'?'Dit is een lokaal bestand. Delen via een link werkt zodra het spel online staat.':'Kopieer de link uit het vakje.');}
   });
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick();});
   window.addEventListener('pageshow',tick);
-  $('bankCount').textContent=`${core.categories.length} categorieën · eindeloos combineren`;
-  if(challenge){$('startHint').textContent='Een gedeelde uitdaging: dezelfde letter en categorieën, jouw eigen timer.';}
+  $('bankCount').textContent=`${core.categories.length} vaste + ${enrichment.entries.length} bewaarde internetcategorieën`;
+  if(challenge){$('duration').value=challenge.duration;$('durationRange').value=challenge.duration;$('startHint').textContent='Gedeelde uitdaging: dezelfde letter, categorieën en tijd. Start zelf de klok.';}
   else if(location.hash){announce('Deze uitdagingslink is ongeldig. Je kunt wel een nieuwe ronde starten.');}
   try{
     const cached=JSON.parse(sessionStorage.getItem(storageKey));
-    if(cached&&core.validCode(cached.code)&&(!challenge||cached.code===challenge)&&['playing','review'].includes(cached.phase)&&Array.isArray(cached.answers)&&cached.answers.length===13&&cached.answers.every(x=>typeof x==='string'&&x.length<=90)&&Array.isArray(cached.accepted)&&cached.accepted.length===13&&cached.accepted.every(x=>typeof x==='boolean')&&Number.isFinite(cached.deadline)&&Number.isFinite(cached.remaining)&&cached.remaining>=0&&cached.remaining<=120){
-      state=cached;render();if(state.phase==='playing')interval=setInterval(tick,200);
+    if(!challenge&&cached&&online.validRound(cached.round)&&cached.phase==='playing'&&['digital','paper'].includes(cached.mode)&&Array.isArray(cached.answers)&&cached.answers.length===13&&cached.answers.every(x=>typeof x==='string'&&x.length<=90)&&Array.isArray(cached.accepted)&&cached.accepted.length===13&&cached.accepted.every(x=>typeof x==='boolean')&&Number.isFinite(cached.deadline)&&Number.isFinite(cached.remaining)&&cached.remaining>=0&&cached.remaining<=cached.round.duration){
+      state=cached;draft={round:cached.round,mode:cached.mode};resume=true;hideRound();$('readyTitle').textContent='Je ronde staat verborgen.';$('readyHint').textContent='Klik op Hervat ronde om je categorieën en antwoorden weer te tonen.';$('beginButton').textContent='Hervat ronde';$('beginButton').disabled=false;$('readyDuration').value=cached.round.duration;$('readyDuration').disabled=true;$('readyTime').textContent=format(cached.round.duration);$('sourceStatus').textContent='Je eerdere timer loopt door. Klik op Hervat ronde om je antwoorden en categorieën weer te tonen. Dit geeft geen extra tijd.';
     }
   }catch{}
 })();
